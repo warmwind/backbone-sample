@@ -1,6 +1,7 @@
 BackboneSample::Application.routes.draw do
   resources :posts
 
+  get :new_posts, to: "posts#bulk_new"
   # The priority is based upon order of creation:
   # first created -> highest priority.
 
