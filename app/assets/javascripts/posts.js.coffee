@@ -4,6 +4,7 @@
 
 $ ->
   window.Post = Backbone.Model.extend
+    url: "/posts.json"
     defaults:
       title: "new post"
       content: "this is a post"
@@ -19,25 +20,50 @@ $ ->
     model: Post
 
   window.NewPostView = Backbone.View.extend
+    events:
+      "click .delete": "delete"
+      "click .save_one": "saveOne"
+      "change  .field": "update"
     template: _.template """
-<div class="new_post">
+<div class="new_post" id='post_<%= timestamp%>'>
+  <span class='error'></span>
   <div class='field'>
     <label for='title_<%= timestamp%>'>title</label><br />
-    <input id='title_<%= timestamp%>' type='text' value='<%= title %>'/>
+    <input id='title_<%= timestamp%>' type='text' data-field='title' value='<%= title %>'/>
   </div>
   <div class='field'>
     <label for='content_<%= timestamp%>'>content</label><br />
-    <textarea  id="content_<%= timestamp%>" cols="30" rows="10"><%= content %></textarea>
+    <textarea  id="content_<%= timestamp%>" cols="30" rows="10" data-field='content'><%= content %></textarea>
   </div>
   <div class='field'>
     <label for='comment_<%= timestamp%>'>comment</label><br />
-    <textarea id="comment_<%= timestamp%>" cols="30" rows="10"><%= comment %></textarea>
+    <textarea id="comment_<%= timestamp%>" cols="30" rows="10" data-field='comment'><%= comment %></textarea>
   </div>
+  <button class='save_one' data-post='post_<%= timestamp%>'>Save</button>
+  <a href="javascript:void(0)" class="delete">Delete</a>
 </div>
                          """
     render: ->
       this.$el.append this.template this.model.attributes
       return this
+    delete: (e)->
+      $(e.target).parent().remove()
+    update: (e)->
+      target = $(e.target)
+      attribute = target.data("field")
+      attrs = {}
+      attrs[attribute] = target.val()
+      this.model.set attrs
+
+    saveOne: (e)->
+      if($(e.target).data('post') == "post_#{this.model.get('timestamp')}")
+        res = this.model.save {},
+          success: (model, response, options) ->
+            $(e.target).parent().remove()
+          error: (model, xhr, options) ->
+            $("#post_#{this.model.get('timestamp')} .error").html xhr.responseText
+        unless res
+          $("#post_#{this.model.get('timestamp')} .error").html this.model.validationError
 
   $("#add_one").on 'click', ->
     new NewPostView({model: new Post(), el: "#new_area"}).render()
