@@ -19,6 +19,18 @@ $ ->
   window.Posts = Backbone.Collection.extend
     model: Post
 
+  window.posts = new Posts()
+  posts.saveAll = ->
+    this.each (post) ->
+      res = post.save {},
+        success: (model, response, options) ->
+          $("#post_#{post.get('timestamp')}").remove()
+        error: (model, xhr, options) ->
+          $("#post_#{post.get('timestamp')} .error").html xhr.responseText
+      unless res
+        $("#post_#{post.get('timestamp')} .error").html post.validationError
+
+
   window.NewPostView = Backbone.View.extend
     events:
       "click .delete": "delete"
@@ -49,11 +61,12 @@ $ ->
     delete: (e)->
       $(e.target).parent().remove()
     update: (e)->
-      target = $(e.target)
-      attribute = target.data("field")
-      attrs = {}
-      attrs[attribute] = target.val()
-      this.model.set attrs
+      if($(e.target).parents(".new_post").attr('id') == "post_#{this.model.get('timestamp')}")
+        target = $(e.target)
+        attribute = target.data("field")
+        attrs = {}
+        attrs[attribute] = target.val()
+        this.model.set attrs
 
     saveOne: (e)->
       if($(e.target).data('post') == "post_#{this.model.get('timestamp')}")
@@ -66,4 +79,9 @@ $ ->
           $("#post_#{this.model.get('timestamp')} .error").html this.model.validationError
 
   $("#add_one").on 'click', ->
-    new NewPostView({model: new Post(), el: "#new_area"}).render()
+    post = new Post()
+    posts.add(post)
+    new NewPostView({model: post, el: "#new_area"}).render()
+
+  $("#save_all").on 'click', ->
+    posts.saveAll()
